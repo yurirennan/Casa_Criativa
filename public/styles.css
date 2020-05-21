@@ -143,7 +143,7 @@ footer a {
 
 #modal {
     background: #ff5e84;
-    position: absolute;
+    position: fixed;
     left: 0;
     right: 0;
     top: 0;
@@ -157,7 +157,6 @@ footer a {
 
 #modal.addScroll {
     overflow: auto;
-    position: fixed;
 }
 
 #modal.addScroll {
