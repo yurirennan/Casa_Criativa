@@ -2,7 +2,10 @@
 const express = require("express")
 const server = express()
 
+const db = require("./db")
+
 server.use(express.static("public"))
+server.use(express.urlencoded({ extended: true }))
 
 //nunjucks config
 const nunjucks = require("nunjucks")
@@ -11,69 +14,64 @@ nunjucks.configure("views", {
     noCache: true, //noChace serve para não armazenar em memoria cache, evita problemas em relação a mudanças em CSS
 })
 
-//ideias em array
-const ideias = [
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729007.svg",
-        title: "Cursos de programação",
-        category: "Estudos",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729005.svg",
-        title: "Exercícios",
-        category: "Saúde",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729027.svg",
-        title: "Meditação",
-        category: "Exercício Mental",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729032.svg",
-        title: "Karaokê",
-        category: "Diversão em Família",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729042.svg",
-        title: "Filmes e Séries",
-        category: "Entreterimento",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-    {
-        urlImg: "https://image.flaticon.com/icons/svg/2729/2729054.svg",
-        title: "Cuidados com Animais domésticos",
-        category: "Cuidados Domésticos",
-        description: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eum accusantium tenetur",
-        url: "https://www.rocketseat.com.br"
-    },
-]
-
 //definindo rotas e capturando e retornando pedido pro cliente
 server.get("/", function (request, response) {
 
-    const lastIdeias = []
-    for (let ideia of ideias) {
-        if (lastIdeias.length <= 2) {
-            lastIdeias.push(ideia)
-        }
-    }
+    db.all(`SELECT * FROM ideias`, function (err, rows) {
+        if (err) return console.log(err)
 
-    return response.render("index.html", { ideias: lastIdeias })
+        const lastIdeias = []
+
+        for (let ideia of rows) {
+            if (lastIdeias.length <= 2) {
+                lastIdeias.push(ideia)
+            }
+        }
+
+        return response.render("index.html", { ideias: lastIdeias })
+    })
 })
 
 server.get("/ideias", function (request, response) {
-    return response.render("ideias.html", { ideias })
+
+    db.all(`SELECT * FROM ideias`, function (err, rows) {
+        if (err) {
+            console.log(err);
+            return response.send("Erro no Banco de Dados")
+        }
+
+        return response.render("ideias.html", { ideias: rows })
+    })
 })
 
+server.post("/", function (request, response) {
+
+    const query = `
+    INSERT INTO ideias (
+        image,
+        title,
+        category,
+        description,
+        link
+    ) VALUES (?,?,?,?,?); `
+
+    const values = [
+        request.body.image,
+        request.body.title,
+        request.body.category,
+        request.body.description,
+        request.body.link
+    ]
+
+    db.run(query, values, function (err) {
+        if (err) {
+            console.log(err);
+            return response.send("Erro no Banco de Dados")
+        }
+
+        return response.redirect("/ideias")
+    })
+})
 
 //definindo porta para rodar o server
 server.listen(3333)
